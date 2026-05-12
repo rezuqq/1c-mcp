@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+data/db/
+data/db/*.db
+data/db/*.db-shm
+data/db/*.db-wal
+data/db/*.sqlite
+data/db/*.sqlite-shm
+data/db/*.sqlite-wal
+тест_RAG_1C/

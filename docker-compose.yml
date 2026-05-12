@@ -1,0 +1,75 @@
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python3", "/app/mcp/server.py"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+      - ./parser:/app/parser:ro
+      - ./search:/app/search:ro
+      - ./mcp:/app/mcp:ro
+      - ./storage.py:/app/storage.py:ro
+      - ./paths.py:/app/paths.py:ro
+      - ./code_indexer.py:/app/code_indexer.py:ro
+    stdin_open: true
+    tty: false
+
+  index-structure:
+    profiles: ["index"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python3", "/app/parser/indexer.py"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+      - ./parser:/app/parser:ro
+      - ./search:/app/search:ro
+      - ./mcp:/app/mcp:ro
+      - ./storage.py:/app/storage.py:ro
+      - ./paths.py:/app/paths.py:ro
+      - ./code_indexer.py:/app/code_indexer.py:ro
+
+  index-code:
+    profiles: ["index"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python3", "/app/code_indexer.py", "/exports/code", "--reset"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+      - ./parser:/app/parser:ro
+      - ./search:/app/search:ro
+      - ./mcp:/app/mcp:ro
+      - ./storage.py:/app/storage.py:ro
+      - ./paths.py:/app/paths.py:ro
+      - ./code_indexer.py:/app/code_indexer.py:ro
+      - ${CODE_EXPORT_DIR:-./code_export}:/exports/code:ro
+
+  index-docs:
+    profiles: ["index"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    command: ["python3", "/app/docs_indexer.py", "/docs", "--reset"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+      - ./parser:/app/parser:ro
+      - ./search:/app/search:ro
+      - ./mcp:/app/mcp:ro
+      - ./storage.py:/app/storage.py:ro
+      - ./paths.py:/app/paths.py:ro
+      - ./code_indexer.py:/app/code_indexer.py:ro
+      - ./docs:/docs:ro
