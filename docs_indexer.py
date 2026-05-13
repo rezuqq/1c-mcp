@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from storage import DocRecord, ensure_schema, insert_doc, object_search_text, open_db, reset_schema
 
 
-DOC_EXTENSIONS = {".md", ".txt", ".html", ".htm"}
+DOC_EXTENSIONS = {".md", ".txt", ".html", ".htm", ".pdf"}
 TAG_RE = re.compile(r"<[^>]+>")
 SCRIPT_STYLE_RE = re.compile(r"(?is)<(script|style).*?>.*?</\1>")
 WS_RE = re.compile(r"\s+")
@@ -28,6 +28,31 @@ def read_text_file(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
+def read_pdf_file(path: Path) -> str:
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise RuntimeError("PDF support requires pypdf. Rebuild the Docker image first.") from exc
+
+    reader = PdfReader(str(path))
+    parts: list[str] = []
+
+    try:
+        metadata = reader.metadata
+        title = getattr(metadata, "title", None) if metadata else None
+        if title:
+            parts.append(str(title).strip())
+    except Exception:
+        pass
+
+    for page in reader.pages:
+        text = (page.extract_text() or "").strip()
+        if text:
+            parts.append(text)
+
+    return "\n".join(parts).strip()
+
+
 def extract_html_text(text: str) -> str:
     text = SCRIPT_STYLE_RE.sub(" ", text)
     text = TAG_RE.sub(" ", text)
@@ -37,8 +62,11 @@ def extract_html_text(text: str) -> str:
 
 
 def normalize_doc_text(path: Path) -> tuple[str, str]:
-    raw = read_text_file(path)
     suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return "pdf", read_pdf_file(path)
+
+    raw = read_text_file(path)
     if suffix in {".html", ".htm"}:
         return "html", extract_html_text(raw)
     return suffix.lstrip("."), raw.strip()

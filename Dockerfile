@@ -5,6 +5,8 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+RUN pip install --no-cache-dir pypdf
+
 COPY . /app
 RUN chmod +x /app/docker-entrypoint.sh
 
