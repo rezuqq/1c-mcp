@@ -10,8 +10,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from storage import (
     ensure_schema,
     format_metadata_object,
+    format_structure_rows,
     format_rows,
     get_object_details,
+    get_parent_object_details,
     list_sections,
     open_db,
     search_docs,
@@ -32,7 +34,30 @@ def cmd_search(text: str) -> str:
     rows = search_metadata_objects(conn, text, limit=20)
     if not rows:
         return "Ничего не найдено"
-    return format_rows(rows, ["full_name", "section_name", "object_type", "name"])
+    return format_structure_rows(rows)
+
+
+def _cmd_search_by_kind(text: str, kind_filters: tuple[str, ...]) -> str:
+    rows = search_metadata_objects(conn, text, limit=20, kind_filters=kind_filters)
+    if not rows:
+        return "Ничего не найдено"
+    return format_structure_rows(rows)
+
+
+def cmd_docs_struct(text: str) -> str:
+    return _cmd_search_by_kind(text, ("Документ",))
+
+
+def cmd_catalogs(text: str) -> str:
+    return _cmd_search_by_kind(text, ("Справочник",))
+
+
+def cmd_registers(text: str) -> str:
+    return _cmd_search_by_kind(text, ("Регистр накопления", "Регистр сведений", "Регистр бухгалтерии", "Регистр расчета"))
+
+
+def cmd_enums(text: str) -> str:
+    return _cmd_search_by_kind(text, ("Перечисление",))
 
 
 def cmd_docs(text: str) -> str:
@@ -46,6 +71,15 @@ def cmd_object(full_name: str) -> str:
     row, attributes, links = get_object_details(conn, full_name)
     if row is None:
         return "Ничего не найдено"
+    return format_metadata_object(row, attributes, links)
+
+
+def cmd_parent(full_name: str) -> str:
+    row, attributes, links, parent_ref = get_parent_object_details(conn, full_name)
+    if row is None:
+        if parent_ref:
+            return f"Родитель не разрешен в объект структуры. Parent={parent_ref}"
+        return "У объекта не найден Parent"
     return format_metadata_object(row, attributes, links)
 
 
@@ -117,8 +151,18 @@ while True:
         print("\n" + cmd_search(cmd[len("search ") :]))
     elif cmd.startswith("docs "):
         print("\n" + cmd_docs(cmd[len("docs ") :]))
+    elif cmd.startswith("documents "):
+        print("\n" + cmd_docs_struct(cmd[len("documents ") :]))
+    elif cmd.startswith("catalogs "):
+        print("\n" + cmd_catalogs(cmd[len("catalogs ") :]))
+    elif cmd.startswith("registers "):
+        print("\n" + cmd_registers(cmd[len("registers ") :]))
+    elif cmd.startswith("enums "):
+        print("\n" + cmd_enums(cmd[len("enums ") :]))
     elif cmd.startswith("object "):
         print("\n" + cmd_object(cmd[len("object ") :]))
+    elif cmd.startswith("parent "):
+        print("\n" + cmd_parent(cmd[len("parent ") :]))
     elif cmd.startswith("attrs "):
         print("\n" + cmd_attributes(cmd[len("attrs ") :]))
     elif cmd.startswith("types "):

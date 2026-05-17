@@ -12,13 +12,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from storage import (
     ModuleRecord,
     ProcedureRecord,
+    clear_code_index,
     ensure_schema,
     insert_chunk,
     insert_module,
     insert_procedure,
     open_db,
     object_search_text,
-    reset_schema,
 )
 
 
@@ -101,9 +101,9 @@ def extract_procedures(module_text: str) -> list[tuple[str, str, int, int, str, 
 
 def index_code_root(root: Path, reset: bool = False) -> None:
     conn = open_db()
-    if reset:
-        reset_schema(conn)
     ensure_schema(conn)
+    if reset:
+        clear_code_index(conn)
 
     files = [
         path

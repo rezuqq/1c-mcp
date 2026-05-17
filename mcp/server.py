@@ -14,8 +14,10 @@ from storage import (
     search_docs,
     ensure_schema,
     format_metadata_object,
+    format_structure_rows,
     format_rows,
     get_object_details,
+    get_parent_object_details,
     open_db,
     list_sections,
     search_attributes,
@@ -38,7 +40,34 @@ def search_structure(query: str, limit: int = 20) -> str:
     rows = search_metadata_objects(conn, query, limit=limit)
     if not rows:
         return "Ничего не найдено"
-    return format_rows(rows, ["full_name", "section_name", "object_type", "name"])
+    return format_structure_rows(rows)
+
+
+def _search_structure_by_kind(query: str, kind_filters: tuple[str, ...], limit: int = 20) -> str:
+    rows = search_metadata_objects(conn, query, limit=limit, kind_filters=kind_filters)
+    if not rows:
+        return "Ничего не найдено"
+    return format_structure_rows(rows)
+
+
+def search_documents(query: str, limit: int = 20) -> str:
+    return _search_structure_by_kind(query, ("Документ",), limit=limit)
+
+
+def search_catalogs(query: str, limit: int = 20) -> str:
+    return _search_structure_by_kind(query, ("Справочник",), limit=limit)
+
+
+def search_registers(query: str, limit: int = 20) -> str:
+    return _search_structure_by_kind(
+        query,
+        ("Регистр накопления", "Регистр сведений", "Регистр бухгалтерии", "Регистр расчета"),
+        limit=limit,
+    )
+
+
+def search_enums(query: str, limit: int = 20) -> str:
+    return _search_structure_by_kind(query, ("Перечисление",), limit=limit)
 
 
 def search_docs_tool(query: str, limit: int = 20) -> str:
@@ -67,6 +96,15 @@ def get_structure_object(full_name: str) -> str:
     row, attributes, links = get_object_details(conn, full_name)
     if row is None:
         return "Ничего не найдено"
+    return format_metadata_object(row, attributes, links)
+
+
+def get_parent_object(full_name: str) -> str:
+    row, attributes, links, parent_ref = get_parent_object_details(conn, full_name)
+    if row is None:
+        if parent_ref:
+            return f"Родитель не разрешен в объект структуры. Parent={parent_ref}"
+        return "У объекта не найден Parent"
     return format_metadata_object(row, attributes, links)
 
 
@@ -170,6 +208,58 @@ TOOLS: dict[str, tuple[Callable[..., str], dict[str, Any], str]] = {
         },
         "Search 1C metadata structure by name or text.",
     ),
+    "search_documents": (
+        search_documents,
+        {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 20},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "Search only 1C documents in the indexed structure.",
+    ),
+    "search_catalogs": (
+        search_catalogs,
+        {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 20},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "Search only 1C catalogs in the indexed structure.",
+    ),
+    "search_registers": (
+        search_registers,
+        {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 20},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "Search only 1C registers in the indexed structure.",
+    ),
+    "search_enums": (
+        search_enums,
+        {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "limit": {"type": "integer", "default": 20},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "Search only 1C enums in the indexed structure.",
+    ),
     "search_docs": (
         search_docs_tool,
         {
@@ -192,6 +282,16 @@ TOOLS: dict[str, tuple[Callable[..., str], dict[str, Any], str]] = {
             "additionalProperties": False,
         },
         "Get a full 1C metadata object description.",
+    ),
+    "get_parent_object": (
+        get_parent_object,
+        {
+            "type": "object",
+            "properties": {"full_name": {"type": "string"}},
+            "required": ["full_name"],
+            "additionalProperties": False,
+        },
+        "Resolve and return the parent object for a 1C metadata object.",
     ),
     "search_attributes_tool": (
         search_attributes_tool,

@@ -10,7 +10,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from storage import DocRecord, ensure_schema, insert_doc, object_search_text, open_db, reset_schema
+from storage import (
+    DocRecord,
+    clear_docs_index,
+    ensure_schema,
+    insert_doc,
+    object_search_text,
+    open_db,
+)
 
 
 DOC_EXTENSIONS = {".md", ".txt", ".html", ".htm", ".pdf"}
@@ -82,9 +89,9 @@ def title_from_path(path: Path, content: str) -> str:
 
 def index_docs_root(root: Path, reset: bool = False) -> None:
     conn = open_db()
-    if reset:
-        reset_schema(conn)
     ensure_schema(conn)
+    if reset:
+        clear_docs_index(conn)
 
     files = [
         path

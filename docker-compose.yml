@@ -9,6 +9,7 @@ services:
       PYTHONUNBUFFERED: "1"
     volumes:
       - ./data:/app/data
+      - ./docs:/app/docs:ro
       - ./parser:/app/parser:ro
       - ./search:/app/search:ro
       - ./mcp:/app/mcp:ro

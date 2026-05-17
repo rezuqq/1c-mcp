@@ -14,6 +14,7 @@ from storage import (
     MetadataAttributeRecord,
     MetadataObjectRecord,
     SectionRecord,
+    clear_structure_index,
     ensure_schema,
     insert_chunk,
     insert_metadata_attribute,
@@ -23,7 +24,6 @@ from storage import (
     object_chunk_text,
     object_search_text,
     open_db,
-    reset_schema,
     section_chunk_text,
     split_types,
 )
@@ -200,9 +200,9 @@ def _build_records(
 
 def index_structure(xml_path: Path, reset: bool = True) -> None:
     conn = open_db()
-    if reset:
-        reset_schema(conn)
     ensure_schema(conn)
+    if reset:
+        clear_structure_index(conn)
 
     section_counts: dict[str, list[str]] = {}
     total_entries = 0
